@@ -61,12 +61,11 @@ void freeTokenVector(const TokenVector *vector) { free(vector->data); }
 TokenVector lex(const char *src) {
     TokenVector tokens = {};
     for (size_t i = 0; i < strlen(src); i++) {
-        if (isalpha(src[i] || isdigit(src[i])) || isspace(src[i])) {
-            while (isalpha(src[i]) || isdigit(src[i])) {
-                ++i;
-            }
+        if (isalpha(src[i]) || isdigit(src[i]) || isspace(src[i])) {
+            ++i;
         }
-        else if (src[i] == '+' || src[i] == '-' || src[i] == '*' || src[i] == '>' || src[i] == '<' || src[i] == '.' || src[i] == ',' || src[i] == '[' || src[i] == ']') {
+        else if (src[i] == '+' || src[i] == '-' || src[i] == '>' || src[i] == '<' ||
+                src[i] == '.' || src[i] == ',' || src[i] == '[' || src[i] == ']') {
             appendToken(&tokens, src[i]);
         } else {
             printf("Error! Unrecognized character: %c\n", src[i]);
