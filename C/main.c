@@ -8,21 +8,21 @@
 #include <sys/wait.h>
 
 typedef struct {
-    char *data;
+    char token;
+    size_t jump;
+} Op;
+
+typedef struct {
+    Op *data;
     size_t count;
     size_t capacity;
-} TokenVector;
+} OpVector;
 
 #define GROW_CAPACITY(cap) \
     ((cap) < 8 ? 8 : (cap) * 2)
 
 #define GROW_ARRAY(type, pointer, oldCount, newCount) \
     ((type*) realloc((pointer), (newCount) * sizeof(type)))
-
-typedef struct {
-    char token;
-    size_t jump;
-} Op;
 
 char *get_file_contents(const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -44,48 +44,48 @@ char *get_file_contents(const char *filename) {
     return contents;
 }
 
-void initTokenVector(TokenVector *vector) {
+void initTokenVector(OpVector *vector) {
     vector->data = NULL;
     vector->count = 0;
     vector->capacity = 0;
 }
 
-void appendToken(TokenVector *vector, const char token) {
+void appendOp(OpVector *vector, const Op op) {
     if (vector->capacity == vector->count) {
         const int oldCap = vector->capacity;
         vector->capacity = GROW_CAPACITY(oldCap);
-        vector->data = GROW_ARRAY(char, vector->data, oldCap, vector->capacity);
+        vector->data = GROW_ARRAY(Op, vector->data, oldCap, vector->capacity);
         if (vector->data == NULL) {
             printf("Error reallocating memory for token vector\n");
             exit(1);
         }
     }
-    vector->data[vector->count] = token;
-    ++vector->count;
+    vector->data[vector->count++] = op;
 }
 
-void freeTokenVector(const TokenVector *vector) { free(vector->data); }
+void freeTokenVector(const OpVector *vector) { free(vector->data); }
 
-TokenVector lex(const char *src) {
-    TokenVector tokens = {};
+OpVector lex(const char *src) {
+    OpVector ops = {};
     for (size_t i = 0; i < strlen(src); i++) {
         if (isalpha(src[i]) || isdigit(src[i]) || isspace(src[i])) {
             ++i;
         }
         else if (src[i] == '+' || src[i] == '-' || src[i] == '>' || src[i] == '<' ||
                 src[i] == '.' || src[i] == ',' || src[i] == '[' || src[i] == ']') {
-            appendToken(&tokens, src[i]);
+            const Op op = { .token = src[i], .jump = 0 };
+            appendOp(&ops, op);
         } else {
             printf("Error! Unrecognized character: %c\n", src[i]);
             exit(1);
         }
     }
-    return tokens;
+    return ops;
 }
 
-void printTokenVector(const TokenVector *vector) {
+void printTokenVector(const OpVector *vector) {
     for (size_t i = 0; i < vector->count; i++) {
-        printf("%zu: %c\n",i, vector->data[i]);
+        printf("%zu: %c\n",i, vector->data[i].token);
     }
     putchar('\n');
 }
@@ -112,7 +112,7 @@ void run_command(const char *const argv[]) {
     }
 }
 
-void generateCode(const TokenVector *vector) {
+void generateCode(const OpVector *vector) {
     // TODO
     FILE *output = fopen("output.s", "w");
     if (output == NULL) {
@@ -149,7 +149,7 @@ int main(const int argc, char *argv[]) {
     }
 
     char *contents = get_file_contents(argv[1]);
-    TokenVector tokens = lex(contents);
+    const OpVector tokens = lex(contents);
     // printf("Got tokens:\n");
     printTokenVector(&tokens);
 
