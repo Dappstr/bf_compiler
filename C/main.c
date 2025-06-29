@@ -125,6 +125,16 @@ void generateCode(const OpVector *vector) {
     fprintf(output, ".extern _exit\n");
     fprintf(output, "_start:\n");
     fprintf(output, "mov x0, #0\nbl _exit\n");
+
+    for (size_t i = 0; i < vector->count; i++) {
+
+    }
+
+    fprintf(output, ".section __DATA, __bss\n");
+    fprintf(output, ".balign 16\n");
+    fprintf(output, ".globl _tape\n");
+    fprintf(output, "._tape:\n");
+    fprintf(output, ".skip 30000\n");
     fclose(output);
 
     const char *clang_args[] = {
