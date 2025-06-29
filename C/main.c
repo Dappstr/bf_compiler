@@ -1,8 +1,11 @@
+
+
 #include <ctype.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 typedef struct {
     char *data;
@@ -15,6 +18,11 @@ typedef struct {
 
 #define GROW_ARRAY(type, pointer, oldCount, newCount) \
     ((type*) realloc((pointer), (newCount) * sizeof(type)))
+
+typedef struct {
+    char token;
+    size_t jump;
+} Op;
 
 char *get_file_contents(const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -82,6 +90,58 @@ void printTokenVector(const TokenVector *vector) {
     putchar('\n');
 }
 
+void run_command(const char *const argv[]) {
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork failed!");
+        exit(1);
+    } else if (pid == 0) {
+        execvp(argv[0], (char* const*) argv);
+        perror("execvp failed!");
+        exit(1);
+    } else {
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("waitpid failed!");
+            exit(1);
+        }
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            fprintf(stderr, "Command failed: %s\n", argv[0]);
+            exit(1);
+        }
+    }
+}
+
+void generateCode(const TokenVector *vector) {
+    // TODO
+    FILE *output = fopen("output.s", "w");
+    if (output == NULL) {
+        printf("Error opening output file\n");
+        exit(1);
+    }
+    fprintf(output, ".section __TEXT, __text\n");
+    fprintf(output, ".align 2\n");
+    fprintf(output, ".globl _start\n");
+    fprintf(output, ".extern _exit\n");
+    fprintf(output, "_start:\n");
+    fprintf(output, "mov x0, #0\nbl _exit\n");
+    fclose(output);
+
+    const char *clang_args[] = {
+        "clang",
+        "-arch", "arm64",
+        "-nostartfiles",
+        "-Wl,-e,_start",
+        "-o", "out",
+        "output.s",
+        NULL
+    };
+    run_command(clang_args);
+
+    const char *rm_args[] = { "rm", "output.s", NULL };
+    run_command(rm_args);
+}
+
 int main(const int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: %s <file>\n", argv[0]);
@@ -90,9 +150,13 @@ int main(const int argc, char *argv[]) {
 
     char *contents = get_file_contents(argv[1]);
     TokenVector tokens = lex(contents);
-    printf("Got tokens:\n");
+    // printf("Got tokens:\n");
     printTokenVector(&tokens);
+
+    generateCode(&tokens);
+
     freeTokenVector(&tokens);
     free(contents);
+
     return 0;
 }
