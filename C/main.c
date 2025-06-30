@@ -175,20 +175,26 @@ void generateCode(const OpVector *vector) {
                 break;
 
             case '+':
+                fprintf(output, "ldrb w0, [x21]\n");
+                fprintf(output, "add w0, w0, #1\n");
+                fprintf(output, "strb w0, [x21]\n");
                 break;
 
             case '-':
+                fprintf(output, "ldrb w0, [x21]\n");
+                fprintf(output, "sub w0, w0, #1\n");
+                fprintf(output, "strb w0, [x21]\n");
                 break;
 
             case '[':
-                fprintf(output, "loop_start_%zu\n", i);
+                fprintf(output, "loop_start_%zu:\n", i);
                 fprintf(output, "ldrb w0, [x21]\n");
                 fprintf(output, "cmp w0, #0\n");
-                fprintf(output, "beq loop_end%zu\n", vector->data[i].jump);
+                fprintf(output, "beq loop_end_%zu\n", vector->data[i].jump);
                 break;
 
             case ']':
-                fprintf(output, "b loop_start_%zu:\n", vector->data[i].jump);
+                fprintf(output, "b loop_start_%zu\n", vector->data[i].jump);
                 fprintf(output, "loop_end_%zu:\n", i);
                 break;
 
