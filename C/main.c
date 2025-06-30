@@ -159,17 +159,19 @@ void generateCode(const OpVector *vector) {
                 fprintf(output, "sub x21, x21, #1\n");
                 break;
             case '.':
-                fprintf(output, "mov x0, #0\n");
-                fprintf(output, "mov x1, #21\n");
-                fprintf(output, "mov x2, #1\n");
-                fprintf(output, "bl _read\n");
-                break;
-            case ',':
-                fprintf(output, "mov x1, #0\n");
-                fprintf(output, "mov x0, x21\n");
+                fprintf(output, "mov x0, #1\n");
+                fprintf(output, "mov x1, x21\n");
                 fprintf(output, "mov x2, #1\n");
                 fprintf(output, "bl _write\n");
                 break;
+
+            case ',':
+                fprintf(output, "mov x0, #0\n");
+                fprintf(output, "mov x1, x21\n");
+                fprintf(output, "mov x2, #1\n");
+                fprintf(output, "bl _read\n");
+                break;
+
             default:
                 fprintf(stderr, "Error! An unrecognized token detected pass lexer: %c", vector->data[i].token);
                 exit(1);
