@@ -182,14 +182,14 @@ void generateCode(const OpVector *vector) {
 
             case '[':
                 fprintf(output, "loop_start_%zu\n", i);
-                fprintf(output, "ldr w0, [x21]\n");
-                fprintf(output, "cmp w0, [21]\n");
+                fprintf(output, "ldrb w0, [x21]\n");
+                fprintf(output, "cmp w0, #0\n");
                 fprintf(output, "beq loop_end%zu\n", vector->data[i].jump);
                 break;
 
             case ']':
-                fprintf(output, "b loop_end%zu:\n", vector->data[i].jump);
-                fprintf(output, "loop_end%zu:\n", i);
+                fprintf(output, "b loop_start_%zu:\n", vector->data[i].jump);
+                fprintf(output, "loop_end_%zu:\n", i);
                 break;
 
             default:
