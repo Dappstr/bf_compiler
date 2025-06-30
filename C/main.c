@@ -50,7 +50,7 @@ void initTokenVector(OpVector *vector) {
 
 void appendOp(OpVector *vector, const Op op) {
     if (vector->capacity == vector->count) {
-        const int oldCap = vector->capacity;
+        const size_t oldCap = vector->capacity;
         vector->capacity = GROW_CAPACITY(oldCap);
         vector->data = GROW_ARRAY(Op, vector->data, oldCap, vector->capacity);
         if (vector->data == NULL) {
@@ -155,13 +155,15 @@ void generateCode(const OpVector *vector) {
             case '>':
                 fprintf(output, "add x21, x21, #1\n");
                 break;
+
             case '<':
                 fprintf(output, "sub x21, x21, #1\n");
                 break;
+
             case '.':
-                fprintf(output, "mov x0, #1\n");
-                fprintf(output, "mov x1, x21\n");
-                fprintf(output, "mov x2, #1\n");
+                fprintf(output, "mov x0, #1\n");        // fd
+                fprintf(output, "mov x1, x21\n");       // cell
+                fprintf(output, "mov x2, #1\n");        // length
                 fprintf(output, "bl _write\n");
                 break;
 
@@ -170,6 +172,24 @@ void generateCode(const OpVector *vector) {
                 fprintf(output, "mov x1, x21\n");
                 fprintf(output, "mov x2, #1\n");
                 fprintf(output, "bl _read\n");
+                break;
+
+            case '+':
+                break;
+
+            case '-':
+                break;
+
+            case '[':
+                fprintf(output, "loop_start_%zu\n", i);
+                fprintf(output, "ldr w0, [x21]\n");
+                fprintf(output, "cmp w0, [21]\n");
+                fprintf(output, "beq loop_end%zu\n", vector->data[i].jump);
+                break;
+
+            case ']':
+                fprintf(output, "b loop_end%zu:\n", vector->data[i].jump);
+                fprintf(output, "loop_end%zu:\n", i);
                 break;
 
             default:
