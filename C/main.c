@@ -83,6 +83,31 @@ OpVector lex(const char *src) {
     return ops;
 }
 
+void compute_jumps(const OpVector *vector) {
+    size_t stack[1024];
+    int top = -1;
+
+    for (size_t i = 0; i < vector->count; i++) {
+        if (vector->data[i].token == '[') {
+            stack[++top] = i;
+        } else if (vector->data[i].token == ']') {
+            if (top < 0) {
+                printf("Error: unmatched ']' at position %zu\n", i);
+                exit(1);
+            }
+            size_t match = stack[top--];
+            vector->data[match].jump = i;
+            vector->data[i].jump = match;
+        }
+    }
+
+    if (top >= 0) {
+        printf("Error: unmatched '[' at position %zu\n", stack[top]);
+        exit(1);
+    }
+}
+
+
 void printTokenVector(const OpVector *vector) {
     for (size_t i = 0; i < vector->count; i++) {
         printf("%zu: %c\n",i, vector->data[i].token);
@@ -113,7 +138,6 @@ void run_command(const char *const argv[]) {
 }
 
 void generateCode(const OpVector *vector) {
-    // TODO
     FILE *output = fopen("output.s", "w");
     if (output == NULL) {
         printf("Error opening output file\n");
@@ -123,17 +147,33 @@ void generateCode(const OpVector *vector) {
     fprintf(output, ".align 2\n");
     fprintf(output, ".globl _start\n");
     fprintf(output, ".extern _exit\n");
+
     fprintf(output, "_start:\n");
-    fprintf(output, "mov x0, #0\nbl _exit\n");
+
+    fprintf(output, "adrp x21, _tape@PAGE\n");
+    fprintf(output, "add x21, x21, _tape@PAGEOFF\n");
 
     for (size_t i = 0; i < vector->count; i++) {
-
+        // TODO
+        switch (vector->data[i].token) {
+            case '>':
+                fprintf(output, "add x21, x21, #1\n");
+                break;
+            case '<':
+                fprintf(output, "sub x21, x21, #1\n");
+                break;
+            default:
+                fprintf(stderr, "Error! An unrecognized token detected pass lexer: %c", vector->data[i].token);
+                exit(1);
+        }
     }
+
+    fprintf(output, "mov x0, #0\nbl _exit\n");
 
     fprintf(output, ".section __DATA, __bss\n");
     fprintf(output, ".balign 16\n");
     fprintf(output, ".globl _tape\n");
-    fprintf(output, "._tape:\n");
+    fprintf(output, "_tape:\n");
     fprintf(output, ".skip 30000\n");
     fclose(output);
 
@@ -160,13 +200,11 @@ int main(const int argc, char *argv[]) {
 
     char *contents = get_file_contents(argv[1]);
     const OpVector tokens = lex(contents);
-    // printf("Got tokens:\n");
-    printTokenVector(&tokens);
-
+    compute_jumps(&tokens);
     generateCode(&tokens);
 
     freeTokenVector(&tokens);
     free(contents);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
