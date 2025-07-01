@@ -139,15 +139,14 @@ void generateCode(const OpVector *vector) {
         printf("Error opening output file\n");
         exit(1);
     }
-    fprintf(output, ".section __TEXT, __text\n");
-    fprintf(output, ".align 2\n");
-    fprintf(output, ".globl _start\n");
-    fprintf(output, ".extern _exit\n");
-
-    fprintf(output, "_start:\n");
-
-    fprintf(output, "adrp x21, _tape@PAGE\n");
-    fprintf(output, "add x21, x21, _tape@PAGEOFF\n");
+    fprintf(output, ".section __TEXT, __text\n"
+                    ".global _start\n"
+                    ".align 2\n"
+                    ".globl _start\n"
+                    ".extern _exit\n"
+                    "_start:\n"
+                    "adrp x21, _tape@PAGE\n"
+                    "add x21, x21, _tape@PAGEOFF\n");
 
     for (size_t i = 0; i < vector->count; i++) {
         // TODO
@@ -161,35 +160,35 @@ void generateCode(const OpVector *vector) {
                 break;
 
             case '.':
-                fprintf(output, "mov x0, #1\n");        // fd
-                fprintf(output, "mov x1, x21\n");       // cell
-                fprintf(output, "mov x2, #1\n");        // length
-                fprintf(output, "bl _write\n");
+                fprintf(output, "mov x0, #1\n"         // fd
+                                "mov x1, x21\n"        // cell
+                                "mov x2, #1\n"         // length
+                                "bl _write\n");
                 break;
 
             case ',':
-                fprintf(output, "mov x0, #0\n");
-                fprintf(output, "mov x1, x21\n");
-                fprintf(output, "mov x2, #1\n");
-                fprintf(output, "bl _read\n");
+                fprintf(output, "mov x0, #0\n"
+                                "mov x1, x21\n"
+                                "mov x2, #1\n"
+                                "bl _read\n");
                 break;
 
             case '+':
-                fprintf(output, "ldrb w0, [x21]\n");
-                fprintf(output, "add w0, w0, #1\n");
-                fprintf(output, "strb w0, [x21]\n");
+                fprintf(output, "ldrb w0, [x21]\n"
+                                "add w0, w0, #1\n"
+                                "strb w0, [x21]\n");
                 break;
 
             case '-':
-                fprintf(output, "ldrb w0, [x21]\n");
-                fprintf(output, "sub w0, w0, #1\n");
-                fprintf(output, "strb w0, [x21]\n");
+                fprintf(output, "ldrb w0, [x21]\n"
+                                "sub w0, w0, #1\n"
+                                "strb w0, [x21]\n");
                 break;
 
             case '[':
                 fprintf(output, "loop_start_%zu:\n", i);
-                fprintf(output, "ldrb w0, [x21]\n");
-                fprintf(output, "cmp w0, #0\n");
+                fprintf(output, "ldrb w0, [x21]\n"
+                                "cmp w0, #0\n");
                 fprintf(output, "beq loop_end_%zu\n", vector->data[i].jump);
                 break;
 
@@ -204,13 +203,12 @@ void generateCode(const OpVector *vector) {
         }
     }
 
-    fprintf(output, "mov x0, #0\nbl _exit\n");
-
-    fprintf(output, ".section __DATA, __bss\n");
-    fprintf(output, ".balign 16\n");
-    fprintf(output, ".globl _tape\n");
-    fprintf(output, "_tape:\n");
-    fprintf(output, ".skip 30000\n");
+    fprintf(output, "mov x0, #0\nbl _exit\n"
+                    ".section __DATA, __bss\n"
+                    ".balign 16\n"
+                    ".globl _tape\n"
+                    "_tape:\n"
+                    ".skip 30000\n");
     fclose(output);
 
     const char *clang_args[] = {
